@@ -2,7 +2,16 @@ from ahpy.ahpy import ahpy
 import itertools
 
 
-def to_pairwise(alternatives, weights):
+def to_pairwise(*args):
+	if len(args) == 2:
+		alternatives = list(args[0])
+		weights = list(args[1])
+	elif len(args) == 1 and type(args[0]) is dict:
+		alternatives = list(args[0].keys())
+		weights = list(args[0].values())
+	else:
+		assert False
+
 	n_alt = len(alternatives)
 	assert n_alt == len(weights)
 
@@ -61,7 +70,7 @@ if __name__ == "__main__":
 	cost = ahpy.Compare('Cost^1', to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
 	cost_price = ahpy.Compare('Price^1', to_pairwise(['a', 'b'], [1, 2]), 3)
 	cost_fuel = ahpy.Compare('Fuel^1', to_pairwise(['a', 'b'], [3, 2]), 3)
-	cost_resale = ahpy.Compare('Resale', to_pairwise(['a', 'b'], [1, 2]), 3)
+	cost_resale = ahpy.Compare('Resale', to_pairwise({'a': 1, 'b': 2}), 3)
 	cost_maint = ahpy.Compare('Maintenance^1', to_pairwise(['a', 'b'], [3, 2]), 3)
 	safety = ahpy.Compare('Safety', to_pairwise(['a', 'b'], [1, 2]), 3)
 	style = ahpy.Compare('Style', to_pairwise(['a', 'b'], [1, 3]), 3)
