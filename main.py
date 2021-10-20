@@ -88,4 +88,11 @@ if __name__ == "__main__":
 		criteria.add_children([cost_price, cost_fuel, cost_maint, cost_resale], 'Cost^1')
 		criteria._recompute()
 
-	print(criteria.report())
+	criteria.report(complete=False, show=True)
+
+	print('='*100)
+	criteria.update_weights(to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 1006]), 'Criteria')
+	criteria.report(show=True)
+	print('='*100)
+	criteria.update_weights(to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 4]), 'Criteria')
+	criteria.report(show=True)
