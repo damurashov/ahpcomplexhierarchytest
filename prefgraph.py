@@ -299,8 +299,47 @@ def graph_complex():
 	print(graph.get_weights())
 
 
+def ahpy_nontree():
+	criteria = ahpy.Compare('Criteria', Graph.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
+	cost = ahpy.Compare('Cost^1', Graph.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
+	cost_price = ahpy.Compare('Price^1', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
+	cost_fuel = ahpy.Compare('Fuel^1', Graph.to_pairwise(['a', 'b'], [3, 2]), 3)
+	cost_resale = ahpy.Compare('Resale', Graph.to_pairwise({'a': 1, 'b': 2}), 3)
+	cost_maint = ahpy.Compare('Maintenance^1', Graph.to_pairwise(['a', 'b'], [3, 2]), 3)
+	safety = ahpy.Compare('Safety', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
+	style = ahpy.Compare('Style', Graph.to_pairwise(['a', 'b'], [1, 3]), 3)
+	capacity = ahpy.Compare('Capacity', {('Cargo', 'Passenger'): 0.2})
+	capacity_pass = ahpy.Compare('Passenger', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
+	capacity_cargo = ahpy.Compare('Cargo', Graph.to_pairwise(['a', 'b'], [5, 2]), precision=3)
+
+	cost.add_children([cost_price, cost_fuel, cost_maint, cost_resale])
+	capacity.add_children([capacity_cargo, capacity_pass])
+	criteria.add_children([cost, safety, style, capacity])
+
+	print(criteria.target_weights)
+
+
+def graph_nontree():
+	graph = Graph("Criteria")
+	graph.set_weights('Criteria', Graph.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
+	graph.set_weights('Cost^1', Graph.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
+	graph.set_weights('Price^1', Graph.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Fuel^1', Graph.to_pairwise(['a', 'b'], [3, 2]))
+	graph.set_weights('Resale', Graph.to_pairwise({'a': 1, 'b': 2}))
+	graph.set_weights('Maintenance^1', Graph.to_pairwise(['a', 'b'], [3, 2]))
+	graph.set_weights('Safety', Graph.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Style', Graph.to_pairwise(['a', 'b'], [1, 3]))
+	graph.set_weights('Capacity', {('Cargo', 'Passenger'): 0.2})
+	graph.set_weights('Passenger', Graph.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Cargo', Graph.to_pairwise(['a', 'b'], [5, 2]))
+
+	print(graph.get_weights())
+
 if __name__ == "__main__":
 	# ahpy_simple()
 	# graph_simple()
-	ahpy_complex()
-	graph_complex()
+	# ahpy_complex()
+	# graph_complex()
+
+	ahpy_nontree()
+	graph_nontree()
