@@ -20,12 +20,14 @@ Formally, the graph has the following properties
 3. For every vertex of the graph, there exists a path to any of the alternatives (so we can assess alternatives in the context of the root)
 4. For every 2 edges (a, X1), (a, X2), there are no paths between X1 and X2 (so we can divide the graph into "levels")
 
-However, the implementation does not offer any facilities to check whether or not the structure of the graph
+However, the implementation does not offer any facilities to check whether or not the structure of a given graph
 satisfies the requirements. Therefore, in cases when it's not the BEHAVIOR IS UNDEFINED
 """
 
 from functools import reduce
 from ahpy.ahpy import ahpy
+import copy
+
 
 class Graph:
 
@@ -79,7 +81,7 @@ class Graph:
 
 	def __init__(self, root_name):
 		self.graph = dict()
-		self.root_name
+		self.root = root_name
 
 	def set_weights(self, context, pairwise):
 		"""
@@ -87,35 +89,25 @@ class Graph:
 		:param context: name of the vertex which the weights will be attached to
 		:param pairwise: {("a","b"): a pref. over b, ("b","c"): b pref. over c, ...}
 		"""
-		self.graph[context].update(Graph._key_format(pairwise))
+		# self.graph[context].update(Graph._key_format(pairwise))
+		if context in self.graph.keys():
+			self.graph[context].update(pairwise)
+		else:
+			self.graph[context] = pairwise
 
 	def get_children_of(self, node_name) -> set:
 		"""
 		:return: Names of the vertex's children
 		"""
 		if node_name in self.graph:
-			return set(reduce(lambda a, b: a + b, self.graph[node_name].values().keys(), ()))
+			return set(reduce(lambda a, b: a + b, self.graph[node_name].keys(), ()))
 		else:
 			return []
-
-	def get_leaves(self) -> set:
-		"""
-		:return: Names of nodes that have no children
-		"""
-		all_nodes = set()
-
-		for k in self.graph.keys():
-			all_nodes.union({k})
-			all_nodes.union(self.get_children_of(k))
-
-		non_leaf_nodes = set(self.graph.key())
-
-		return all_nodes.difference(non_leaf_nodes)
 
 	def __str__(self):
 		print(self.graph)
 
-	def get_weights(self, context, assessed: dict = dict()) -> dict:
+	def _get_weights(self, context, assessed: dict = dict()) -> dict:
 		"""
 		Recursive call for "convolving" the alternatives up to the given context
 		:param context: name of the vertex
@@ -123,19 +115,29 @@ class Graph:
 		Format: {context1: {alt1: weight, alt2: weight}, context2: {...}}
 		:return: dict of assessed vertices (extended).
 		"""
+		print('--->> ' + context)
 		children = self.get_children_of(context)
+		print("children: " + str(children))
+
+		if not children:
+			print('<<---')
+			return assessed
 
 		for child in children:
 			if not (child in assessed.keys()):
 				assessed = self._get_weights(child, assessed)
 
 		compare = ahpy.Compare(context, self.graph[context])
+		lower_contexts = [ahpy.Compare(child, Graph.to_pairwise(assessed[child])) for child in children if child in assessed.keys()]
 
-		if children:
-			compare.add_children([ahpy.Compare(child, Graph.to_pairwise(assessed[child])) for child in children])
+		print("lower contexts: " + str(lower_contexts))
+
+		if lower_contexts:
+			compare.add_children(lower_contexts)
 
 		assessed[context] = compare.target_weights
 
+		print('<<---')
 		return assessed
 
 	def get_weights(self):
@@ -143,3 +145,21 @@ class Graph:
 		:return: Returns weighted alternatives in the form {"a1": weight_a1, "a2": weight_a2,...}
 		"""
 		return self._get_weights(self.root)[self.root]
+
+
+if __name__ == "__main__":
+	graph = Graph("target")
+	graph.set_weights("target", Graph.to_pairwise({"b1": 1, "b2": 3, "b3": 4}))
+	graph.set_weights("b1", Graph.to_pairwise({"c1": 30, "c2": 50}))
+	graph.set_weights("b2", Graph.to_pairwise({"c2": 30, "c3": 50}))
+	graph.set_weights("b3", Graph.to_pairwise({"c1": 10, "c3": 100}))
+
+	graph_copy = copy.deepcopy(graph)
+	graph_copy.set_weights("c1", Graph.to_pairwise({"Alternative 1": 10, "Alternative 2": 20}))
+	graph_copy.set_weights("c2", Graph.to_pairwise({"Alternative 1": 10, "Alternative 2": 1}))
+	graph_copy.set_weights("c3", Graph.to_pairwise({"Alternative 1": 10, "Alternative 2": 3}))
+
+	print(graph.graph)
+	print(graph_copy.graph)
+
+	print(graph_copy.get_weights())
