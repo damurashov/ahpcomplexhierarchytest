@@ -28,36 +28,10 @@ from functools import reduce
 from ahpy.ahpy import ahpy
 import copy
 import itertools
+from random import random
 
 
 class Graph:
-
-	@staticmethod
-	def to_pairwise(*args):
-		"""
-		From plain non-normalized weight vectors to pairwise comparisons
-		:param args: ["a","b", "c"], [33, 44, 66]  OR  {"a": 33, "b": 44, "c": 66}
-		:return: {("a", "b"): a / b, ("a","c"): a / c, ("b","c"): b / c}
-		"""
-		if len(args) == 2:
-			alternatives = list(args[0])
-			weights = list(args[1])
-		elif len(args) == 1 and type(args[0]) is dict:
-			alternatives = list(args[0].keys())
-			weights = list(args[0].values())
-		else:
-			assert False
-
-		n_alt = len(alternatives)
-		assert n_alt == len(weights)
-
-		ret = dict()
-
-		for i in range(0, n_alt):
-			for j in range(i + 1, n_alt):
-				ret[(alternatives[i], alternatives[j],)] = weights[i] / weights[j]
-
-		return ret
 
 	@staticmethod
 	def _pair_format(pair: tuple):
@@ -133,7 +107,7 @@ class Graph:
 				assessed = self._get_weights(child, assessed)
 
 		compare = ahpy.Compare(context, self.graph[context])
-		lower_contexts = [ahpy.Compare(child, Graph.to_pairwise(assessed[child])) for child in children if child in assessed.keys()]
+		lower_contexts = [ahpy.Compare(child, ahpy.to_pairwise(assessed[child])) for child in children if child in assessed.keys()]
 
 		__trace("lower contexts: " + str(lower_contexts))
 
@@ -260,11 +234,11 @@ def graph_complex():
 	cost_price = m(pairs, cost_price_m)
 
 	cost_fuel_m = (31, 35, 22, 27, 25, 26)
-	cost_fuel = Graph.to_pairwise(m(alt, cost_fuel_m))
+	cost_fuel = ahpy.to_pairwise(m(alt, cost_fuel_m))
 
 	cost_resale_m = (0.52, 0.46, 0.44, 0.55, 0.48, 0.48)
 	cost_resale = m(alt, cost_resale_m)
-	cost_resale = Graph.to_pairwise(cost_resale)
+	cost_resale = ahpy.to_pairwise(cost_resale)
 
 	cost_maint_m = (1.5, 4, 4, 4, 5, 4, 4, 4, 5, 1, 1.2, 1, 1, 3, 2)
 	cost_maint = m(pairs, cost_maint_m)
@@ -278,10 +252,10 @@ def graph_complex():
 	capacity = {('Cargo', 'Passenger'): 0.2}
 
 	capacity_pass_m = (5, 5, 8, 5, 4, 8)
-	capacity_pass = Graph.to_pairwise(m(alt, capacity_pass_m))
+	capacity_pass = ahpy.to_pairwise(m(alt, capacity_pass_m))
 
 	capacity_cargo_m = (14, 14, 87.6, 72.9, 74.6, 147.4)
-	capacity_cargo = Graph.to_pairwise(m(alt, capacity_cargo_m))
+	capacity_cargo = ahpy.to_pairwise(m(alt, capacity_cargo_m))
 
 	graph = Graph("Criteria")
 	graph.set_weights("Criteria", criteria)
@@ -300,17 +274,17 @@ def graph_complex():
 
 
 def ahpy_nontree():
-	criteria = ahpy.Compare('Criteria', Graph.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
-	cost = ahpy.Compare('Cost^1', Graph.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
-	cost_price = ahpy.Compare('Price^1', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
-	cost_fuel = ahpy.Compare('Fuel^1', Graph.to_pairwise(['a', 'b'], [3, 2]), 3)
-	cost_resale = ahpy.Compare('Resale', Graph.to_pairwise({'a': 1, 'b': 2}), 3)
-	cost_maint = ahpy.Compare('Maintenance^1', Graph.to_pairwise(['a', 'b'], [3, 2]), 3)
-	safety = ahpy.Compare('Safety', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
-	style = ahpy.Compare('Style', Graph.to_pairwise(['a', 'b'], [1, 3]), 3)
+	criteria = ahpy.Compare('Criteria', ahpy.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
+	cost = ahpy.Compare('Cost^1', ahpy.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
+	cost_price = ahpy.Compare('Price^1', ahpy.to_pairwise(['a', 'b'], [1, 2]), 3)
+	cost_fuel = ahpy.Compare('Fuel^1', ahpy.to_pairwise(['a', 'b'], [3, 2]), 3)
+	cost_resale = ahpy.Compare('Resale', ahpy.to_pairwise({'a': 1, 'b': 2}), 3)
+	cost_maint = ahpy.Compare('Maintenance^1', ahpy.to_pairwise(['a', 'b'], [3, 2]), 3)
+	safety = ahpy.Compare('Safety', ahpy.to_pairwise(['a', 'b'], [1, 2]), 3)
+	style = ahpy.Compare('Style', ahpy.to_pairwise(['a', 'b'], [1, 3]), 3)
 	capacity = ahpy.Compare('Capacity', {('Cargo', 'Passenger'): 0.2})
-	capacity_pass = ahpy.Compare('Passenger', Graph.to_pairwise(['a', 'b'], [1, 2]), 3)
-	capacity_cargo = ahpy.Compare('Cargo', Graph.to_pairwise(['a', 'b'], [5, 2]), precision=3)
+	capacity_pass = ahpy.Compare('Passenger', ahpy.to_pairwise(['a', 'b'], [1, 2]), 3)
+	capacity_cargo = ahpy.Compare('Cargo', ahpy.to_pairwise(['a', 'b'], [5, 2]), precision=3)
 
 	cost.add_children([cost_price, cost_fuel, cost_maint, cost_resale])
 	capacity.add_children([capacity_cargo, capacity_pass])
@@ -321,19 +295,54 @@ def ahpy_nontree():
 
 def graph_nontree():
 	graph = Graph("Criteria")
-	graph.set_weights('Criteria', Graph.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
-	graph.set_weights('Cost^1', Graph.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
-	graph.set_weights('Price^1', Graph.to_pairwise(['a', 'b'], [1, 2]))
-	graph.set_weights('Fuel^1', Graph.to_pairwise(['a', 'b'], [3, 2]))
-	graph.set_weights('Resale', Graph.to_pairwise({'a': 1, 'b': 2}))
-	graph.set_weights('Maintenance^1', Graph.to_pairwise(['a', 'b'], [3, 2]))
-	graph.set_weights('Safety', Graph.to_pairwise(['a', 'b'], [1, 2]))
-	graph.set_weights('Style', Graph.to_pairwise(['a', 'b'], [1, 3]))
+	graph.set_weights('Criteria', ahpy.to_pairwise(['Cost^1', 'Safety', 'Style', 'Capacity'], [3, 5, 3, 40000]))
+	graph.set_weights('Cost^1', ahpy.to_pairwise(['Price^1', 'Fuel^1', 'Maintenance^1', 'Resale'], [2, 4, 6, .5]))
+	graph.set_weights('Price^1', ahpy.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Fuel^1', ahpy.to_pairwise(['a', 'b'], [3, 2]))
+	graph.set_weights('Resale', ahpy.to_pairwise({'a': 1, 'b': 2}))
+	graph.set_weights('Maintenance^1', ahpy.to_pairwise(['a', 'b'], [3, 2]))
+	graph.set_weights('Safety', ahpy.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Style', ahpy.to_pairwise(['a', 'b'], [1, 3]))
 	graph.set_weights('Capacity', {('Cargo', 'Passenger'): 0.2})
-	graph.set_weights('Passenger', Graph.to_pairwise(['a', 'b'], [1, 2]))
-	graph.set_weights('Cargo', Graph.to_pairwise(['a', 'b'], [5, 2]))
+	graph.set_weights('Passenger', ahpy.to_pairwise(['a', 'b'], [1, 2]))
+	graph.set_weights('Cargo', ahpy.to_pairwise(['a', 'b'], [5, 2]))
 
 	print(graph.get_weights())
+
+
+def ahpy_attack():
+
+	def get_aspects(*aspects):
+		return [ahpy.Compare(aspect, ahpy.to_pairwise({"run": 1, "fight": 1, "gather": 1, "idle": 1})) for aspect in aspects]
+
+	graph = ahpy.Compare("strategy", ahpy.to_pairwise({"invasive": 10, "secure": 1150}))
+	invasive = ahpy.Compare("invasive", ahpy.to_pairwise({"resource_acquisition": 15, "enemy_weakening": 20, "strength_saving": 5}))
+	secure = ahpy.Compare("secure", ahpy.to_pairwise({"strength_saving": 16, "resource_saving": 10}))
+	strength_saving = ahpy.Compare("strength_saving", ahpy.to_pairwise({"run": 1, "fight": 1, "gather": 1, "idle": 1}))
+	resource_saving = copy.deepcopy(strength_saving)
+	resource_acquisition = copy.deepcopy(strength_saving)
+	enemy_weakening = copy.deepcopy(strength_saving)
+
+	invasive.add_children([resource_acquisition, enemy_weakening, strength_saving])
+	secure.add_children([resource_saving, strength_saving])
+	graph.add_children([invasive, secure])
+
+	print(graph.target_weights)
+
+
+def graph_attack():
+	graph = Graph("strategy")
+	graph.set_weights("strategy", ahpy.to_pairwise({"invasive": 100, "secure": 5}))
+	graph.set_weights("invasive", ahpy.to_pairwise({"resource_acquisition": 11, "enemy_weakening": 8}))
+	graph.set_weights("secure", ahpy.to_pairwise({"strength_saving": 15, "resource_saving": 7}))
+
+	for aspect in {"strength_saving", "resource_saving", "enemy_weakening", "resource_acquisition"}:
+		graph.set_weights(aspect, ahpy.to_pairwise({"run": random(), "fight": random(), "gather": random(), "idle": random()}))
+
+	print(graph.get_weights())
+	graph.set_weights("strategy", ahpy.to_pairwise({"invasive": 5, "secure": 100}))
+	print(graph.get_weights())
+
 
 if __name__ == "__main__":
 	# ahpy_simple()
@@ -341,5 +350,8 @@ if __name__ == "__main__":
 	# ahpy_complex()
 	# graph_complex()
 
-	ahpy_nontree()
-	graph_nontree()
+	# ahpy_nontree()
+	# graph_nontree()
+
+	# ahpy_attack()
+	graph_attack()
