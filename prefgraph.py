@@ -26,104 +26,10 @@ satisfies the requirements. Therefore, in cases when it's not the BEHAVIOR IS UN
 
 from functools import reduce
 from ahpy.ahpy import ahpy
+from ahpy.ahpy.ahpy import Graph
 import copy
 import itertools
 from random import random
-
-
-class Graph:
-
-	@staticmethod
-	def _pair_format(pair: tuple):
-		vert_a, vert_b = pair
-
-		if vert_a > vert_b:
-			return vert_a, vert_b
-		else:
-			return vert_b, vert_a
-
-	@staticmethod
-	def _key_format(pairwise):
-		formatted = dict()
-
-		# Order vertices in alphabetical order
-		for k, val in zip(pairwise.keys(), pairwise.values()):
-			k_ord = Graph._pair_format(k)
-			val = val if k == k_ord else 1 / val
-			formatted[k_ord] = val
-
-		return formatted
-
-	def __init__(self, root_name):
-		self.graph = dict()
-		self.root = root_name
-
-	def set_weights(self, context, pairwise):
-		"""
-		Used for both update
-		:param context: name of the vertex which the weights will be attached to
-		:param pairwise: {("a","b"): a pref. over b, ("b","c"): b pref. over c, ...}
-		"""
-		# self.graph[context].update(Graph._key_format(pairwise))
-		if context in self.graph.keys():
-			self.graph[context].update(pairwise)
-		else:
-			self.graph[context] = pairwise
-
-	def get_children_of(self, node_name) -> set:
-		"""
-		:return: Names of the vertex's children
-		"""
-		if node_name in self.graph:
-			return set(reduce(lambda a, b: a + b, self.graph[node_name].keys(), ()))
-		else:
-			return []
-
-	def __str__(self):
-		print(self.graph)
-
-	def _get_weights(self, context, assessed: dict = dict()) -> dict:
-		"""
-		Recursive call for "convolving" the alternatives up to the given context
-		:param context: name of the vertex
-		:param assessed: The nodes in the context of which the leaves have been assessed by the moment.
-		Format: {context1: {alt1: weight, alt2: weight}, context2: {...}}
-		:return: dict of assessed vertices (extended).
-		"""
-
-		def __trace(s):
-			pass
-
-		__trace('--->> ' + context)
-		children = self.get_children_of(context)
-		__trace("children: " + str(children))
-
-		if not children:
-			__trace('<<--- ' + context)
-			return assessed
-
-		for child in children:
-			if not (child in assessed.keys()):
-				assessed = self._get_weights(child, assessed)
-
-		compare = ahpy.Compare(context, self.graph[context])
-		lower_contexts = [ahpy.Compare(child, ahpy.to_pairwise(assessed[child])) for child in children if child in assessed.keys()]
-
-		__trace("lower contexts: " + str(lower_contexts))
-
-		if lower_contexts:
-			compare.add_children(lower_contexts)
-
-		assessed[context] = compare.target_weights
-
-		__trace('<<---' + context)
-		return assessed
-
-	def get_weights(self):
-		"""
-		:return: Returns weighted alternatives in the form {"a1": weight_a1, "a2": weight_a2,...}
-		"""
-		return self._get_weights(self.root)[self.root]
 
 
 def ahpy_simple():
@@ -318,7 +224,7 @@ def ahpy_attack():
 	graph = ahpy.Compare("strategy", ahpy.to_pairwise({"invasive": 10, "secure": 1150}))
 	invasive = ahpy.Compare("invasive", ahpy.to_pairwise({"resource_acquisition": 15, "enemy_weakening": 20, "strength_saving": 5}))
 	secure = ahpy.Compare("secure", ahpy.to_pairwise({"strength_saving": 16, "resource_saving": 10}))
-	strength_saving = ahpy.Compare("strength_saving", ahpy.to_pairwise({"run": 1, "fight": 1, "gather": 1, "idle": 1}))
+	strength_saving = ahpy.Compare("strength_saving", ahpy.to_pairwise({"run": random(), "fight": random(), "gather": random(), "idle": random()}))
 	resource_saving = copy.deepcopy(strength_saving)
 	resource_acquisition = copy.deepcopy(strength_saving)
 	enemy_weakening = copy.deepcopy(strength_saving)
@@ -328,6 +234,8 @@ def ahpy_attack():
 	graph.add_children([invasive, secure])
 
 	print(graph.target_weights)
+
+
 
 
 def graph_attack():
@@ -340,18 +248,17 @@ def graph_attack():
 		graph.set_weights(aspect, ahpy.to_pairwise({"run": random(), "fight": random(), "gather": random(), "idle": random()}))
 
 	print(graph.get_weights())
-	graph.set_weights("strategy", ahpy.to_pairwise({"invasive": 5, "secure": 100}))
+	print(graph.graph)
+
+	graph.set_weights("secure", ahpy.to_pairwise({"strength_saving": 2, "resource_saving": 70}))
 	print(graph.get_weights())
+	print(graph.graph)
+	#
+	# for aspect in {"strength_saving", "resource_saving", "enemy_weakening", "resource_acquisition"}:
+	# 	graph.set_weights(aspect, ahpy.to_pairwise({"run": random(), "fight": random(), "gather": random(), "idle": random()}))
+	# print(graph.get_weights())
+	# print(graph.graph)
 
 
 if __name__ == "__main__":
-	# ahpy_simple()
-	# graph_simple()
-	# ahpy_complex()
-	# graph_complex()
-
-	# ahpy_nontree()
-	# graph_nontree()
-
-	# ahpy_attack()
-	graph_attack()
+	print(graph_attack())
